@@ -2,7 +2,6 @@ from tkinter import filedialog
 from tkinter import *
 from tkinter import ttk
 from sys import exit
-from numpy.core.numeric import full
 from pydicom.filereader import dcmread
 import os
 # Python program to create 
@@ -33,72 +32,54 @@ def process():
     source_path=window.source_path
     destination_path=window.destination_path
     modality=entry_modality.get()
-    #print(modality)
+    print(modality)
     institution="01"
-    #print('strarted')
-    total_files=len(os.listdir(source_path))
-    #exit()
-    file_counter=1
-    for path in os.listdir(source_path):
-        print('processing file ',file_counter, 'of ',total_files)
-        file_counter=file_counter+1
-        full_path = os.path.join(source_path, path)
-        if os.path.isfile(full_path):
-            filename=full_path
-            if filename.endswith(".dcm"):                 
-                        try:
-                            ds=dcmread(filename)
-                            #print(ds.ViewPosition,ds.ImageLaterality)
-                            #exit()
-                            #print('dcm file was read')
-                            if(ds.Modality==modality):
-                                if ds.InstitutionName != None:
-                                    oinstitution=ds.InstitutionName
-                                else:
-                                    oinstitution="No institution"
-                                institution=oinstitution[0]+oinstitution[-1]
-                                patient_name="PAT_"+institution+"_"+str(ds.PatientID).zfill(6)
-                                #print(patient_name)
-                                pat=os.path.join(destination_path,patient_name)
-                                #print('patient path was',pat)   
-                                try:
-                                                                 
-                                    #no_of_files=len([name for name in os.listdir(pat) if os.path.isfile(name)])
-                                    ##print(no_of_files)
-                                    os.makedirs(pat)
-                                    #print('dir was created')
-                                except OSError as e:
-                                    if os.listdir(pat) == []: 
-                                        print("No files found in the directory.") 
-                                    #else: 
-                                        #print(os.listdir(pat))
-                                        #print("Some files found in the directory.") 
-                                        #raise
-                                #exit()
-                                ds.PatientName=patient_name
-                                
-                                ds.InstitutionName=institution
-                                #print(patient_name," was processed")
-                                ##print(ds.InstitutionName)
-                                i=0
-                                patf=os.path.join(pat,str(i).zfill(2)+"-"+ds.ViewPosition+"-"+ds.ImageLaterality+".dcm")
-                                #print(patf)
-                                while(os.path.isfile(patf)):
-                                    #print('duplicate files was found for ',patf)
-                                    i=i+1
-                                    patf=os.path.join(pat,str(i).zfill(2)+"-"+ds.ViewPosition+"-"+ds.ImageLaterality+".dcm")
-    
-                                ##print(patf)
-                                try:
-                                    ds.save_as(patf, write_like_original=False)
-                                except OSError as e:
-                                    print(e.strerror)
-                            else:
-                                print("No mammo for patient") 
-                        except OSError as e:
-                            print("Error occurred",e.strerror)
+    patient_id=int(entry_seq.get())
+    print('strarted')
+    for dd in os.listdir(source_path):
+        d=os.path.join(source_path,dd)
+        if os.path.isdir(d):
+            patient_name="PAT"+str(patient_id).zfill(6)
+            pat=os.path.join(destination_path,patient_name)
+            try:
+                os.makedirs(pat)
+            except OSError as e:
+                if os.listdir(pat) == []: 
+                    print("No files found in the directory.") 
+                else: 
+                    print(os.listdir(pat))
+                    print("Some files found in the directory.") 
+                    raise
+            i=0
+            j=0
+            for subdirs,dirs,files in os.walk(d):
+                #label_status.configure(text="Status: Anonymizing patient PAT"+str(patient_id).zfill(6))
+                
+                for filename in files: 
+                    print(filename)
+                    try:
+                        ds=dcmread(os.path.join(subdirs,filename))
+                        if(ds.Modality==modality):
+                            ds.PatientName=patient_name
+                            ds.PatientID=str(patient_id).zfill(4)
+                            ds.InstitutionName=institution
+                            print(patient_name," seq ", i," was processed")
+                            #print(ds.InstitutionName)
+                            patf=os.path.join(pat,str(i).zfill(2)+".dcm")
+                            #print(patf)
+                            ds.save_as(patf, write_like_original=False)
+                            i=i+1
+                            j=j+1
+                        else:
+                            
+                            print("No mammo for patient",patient_id) 
+                    except:
+                        print("Error occurred")
+            if(j>0): 
+                 patient_id=patient_id+1
+            
     label_status.configure(text="Status: Finished")
-    #print('finished')
+    print('finished')
     exit
 																								
 # Create the root window
